@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scroll Video Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #000;
+        }
+        
+        #video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* This creates the scrollable space */
+        #scroll-spacer {
+            height: 300vh;
+            position: relative;
+            pointer-events: none;
+        }
+        
+        /* Optional: Loading indicator */
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading video...</div>
+    
+    <div id="video-container">
+        <video id="video" preload="auto" muted playsinline>
+            <source src="https://raw.githubusercontent.com/willdemofox-code/wilusito/main/webvid%204k%20more%20keyframes0001-0202.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    
+    <div id="scroll-spacer"></div>
+    
+    <script>
+        const video = document.getElementById('video');
+        const loading = document.getElementById('loading');
+        
+        // Hide loading message when video is ready
+        video.addEventListener('loadedmetadata', () => {
+            loading.style.display = 'none';
+            console.log('Video duration:', video.duration, 'seconds');
+            startAnimation();
+        });
+        
+        // Smooth scrolling variables
+        let targetTime = 0;
+        let currentTime = 0;
+        const smoothing = 0.2; // More responsive
+        let animationId = null;
+        
+        // Update target time based on scroll
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset;
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollProgress = scrollTop / scrollHeight;
+            
+            if (video.duration) {
+                targetTime = scrollProgress * video.duration;
+            }
+        });
+        
+        // Smooth animation loop
+        function animate() {
+            // Calculate difference
+            const diff = targetTime - currentTime;
+            
+            // Apply smoothing
+            currentTime += diff * smoothing;
+            
+            // Update video if there's a meaningful difference
+            if (video.duration && Math.abs(diff) > 0.016) { // ~1 frame at 60fps
+                video.currentTime = currentTime;
+            }
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function startAnimation() {
+            if (!animationId) {
+                animate();
+            }
+        }
+        
+        // Prevent video from playing on its own
+        video.addEventListener('play', () => {
+            video.pause();
+        });
+    </script>
+</body>
+</html>
