@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scroll Image Sequence</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #000;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        #scroll-spacer {
+            height: 300vh;
+            position: relative;
+            pointer-events: none;
+        }
+        
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            z-index: 10;
+            text-align: center;
+        }
+        
+        #progress {
+            margin-top: 10px;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        Loading frames...
+        <div id="progress">0%</div>
+    </div>
+    
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+    
+    <div id="scroll-spacer"></div>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const loading = document.getElementById('loading');
+        const progressText = document.getElementById('progress');
+        
+        // Frame configuration
+        const frameCount = 119;
+        const startFrame = 15;
+        const endFrame = 133;
+        const baseURL = 'https://raw.githubusercontent.com/willdemofox-code/wilusito/main/frames/';
+        
+        // Preload all images
+        const images = [];
+        let imagesLoaded = 0;
+        let currentFrame = 0;
+        
+        // Pad frame number to 4 digits (e.g., 15 -> 0015)
+        function getFrameNumber(index) {
+            const frameNum = startFrame + index;
+            return frameNum.toString().padStart(4, '0');
+        }
+        
+        // Preload all frames
+        function preloadImages() {
+            for (let i = 0; i < frameCount; i++) {
+                const img = new Image();
+                const frameNum = getFrameNumber(i);
+                img.src = `${baseURL}${frameNum}.jpg`;
+                
+                img.onload = () => {
+                    imagesLoaded++;
+                    const percent = Math.round((imagesLoaded / frameCount) * 100);
+                    progressText.textContent = `${percent}%`;
+                    
+                    // When first image loads, set canvas size and show it
+                    if (imagesLoaded === 1) {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        drawFrame(0);
+                    }
+                    
+                    // When all loaded, hide loading message
+                    if (imagesLoaded === frameCount) {
+                        loading.style.display = 'none';
+                        console.log('All frames loaded!');
+                    }
+                };
+                
+                img.onerror = () => {
+                    console.error(`Failed to load frame ${frameNum}`);
+                    imagesLoaded++;
+                };
+                
+                images.push(img);
+            }
+        }
+        
+        // Draw a specific frame
+        function drawFrame(frameIndex) {
+            if (images[frameIndex] && images[frameIndex].complete) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(images[frameIndex], 0, 0);
+            }
+        }
+        
+        // Handle scroll
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset;
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollProgress = scrollTop / scrollHeight;
+            
+            // Calculate which frame to show
+            const frameIndex = Math.min(
+                Math.floor(scrollProgress * frameCount),
+                frameCount - 1
+            );
+            
+            // Only redraw if frame changed
+            if (frameIndex !== currentFrame) {
+                currentFrame = frameIndex;
+                drawFrame(currentFrame);
+            }
+        });
+        
+        // Start preloading
+        preloadImages();
+    </script>
+</body>
+</html>
